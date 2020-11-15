@@ -5,7 +5,12 @@ import bpy
 import numpy as np
 from mathutils import Vector
 from math import sqrt
-from photonMap import *
+
+import importlib
+import photonMap
+importlib.reload(photonMap)
+from photonMap import profile, test_load_map
+
 
 
 def ray_cast(scene, origin, direction):
@@ -287,6 +292,15 @@ class SimpleRTRenderEngine(bpy.types.RenderEngine):
             pass
         else:
             self.render_scene(scene)
+
+        #============== for project debug
+        dir_path = "./profile"
+        profile(map_size=1e5, num_query=10, query_radius=0.2, dir_path=dir_path)
+
+        from os.path import join
+        map_path = join(dir_path, "map.pkl")
+        test_load_map(map_path)
+        #============== for project debug
 
     def render_scene(self, scene):
         # create a buffer to store the calculated intensities
