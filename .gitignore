@@ -1,8 +1,6 @@
-./materials/*
 __pycache__/
 *.py[cod]
 *$py.class
 .DS_Store
-./profile/
-./profile/*
+profile/*
 *blend1
