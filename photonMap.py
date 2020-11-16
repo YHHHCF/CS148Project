@@ -22,6 +22,13 @@ class Photon():
     def set_dir(self, x, y, z):
         self.direction = np.array([x, y, z])
 
+    def copy(self):  # copy every field except for id
+        copy = Photon()
+        copy.location = self.location
+        copy.direction = self.direction
+        copy.depth = self.depth
+        return copy
+
     def print_photon(self):
         assert(self.id)
         assert(self.location)

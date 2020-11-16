@@ -13,6 +13,12 @@ import sample
 importlib.reload(sample)
 from sample import *
 
+import rayTracing
+importlib.reload(rayTracing)
+from rayTracing import *
+
+eps = 0.0003
+
 # Show the objects in the scene for debug
 def print_scene():
     print("============= Scene Objects =============")
@@ -38,7 +44,7 @@ def trace_photons(depth):
 
     # Determine #photons for each light source
     for light in lights:
-        # Determine emission pattern from light property
+        # Determine emission pattern from light property (TODO)
         if light.data.type == "AREA":
             pass
         else:
@@ -57,18 +63,45 @@ def trace_photons(depth):
     print("Finished Building Photon Map!")
     return photon_map
 
+
 # Trace one photon recursively
+# Add a copy of it to photon map each time it reflects
 def trace_photon(scene, depth, photon, photon_map):
     # Get photon location and direction
+    photon_loc = Vector(photon.location)
+    photon_dir = Vector(photon.direction)
 
     # Find intersection using ray casting
+    has_hit, hit_loc, hit_norm, _, hit_obj, _ = ray_cast(scene, photon_loc, photon_dir)
 
-    # Get intersection material information
+    if not has_hit:
+        return
 
-    # Determint the next photon location and direction
+    # If hit, update depth, location of original photon
+    new_loc = hit_loc + hit_norm * eps
+    photon.set_loc(new_loc[0], new_loc[1], new_loc[2])
+    photon.depth = photon.depth + 1
 
-    # Call recursively
-    pass
+    # Add a copy of original photon to photon map
+    photon_copy = photon.copy()
+    photon_copy.id = photon_map.get_id()
+    photon_map.add_photon(photon_copy)
+
+    # Get intersection material information (TODO: base the reflection direction on material)
+    mat = hit_obj.simpleRT_material
+    reflectivity = mat.mirror_reflectivity # range [0, 1]
+
+    # Determint whether the photon will be bounced or absorbed
+    if not sample_bernoulli(reflectivity):
+        return  # absorbed
+
+    # Update photon direction (TODO: implement BRDF table, now simply use reflection)
+    photon_dir = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm
+
+    # Call recursively if this photon has not reached depth limit
+    if (photon.depth < depth):
+        trace_photon(scene, depth, photon, photon_map)
+
 
 if __name__ == "__main__":
     pass

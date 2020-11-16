@@ -19,6 +19,10 @@ def sample_dirs(n):
 
 	return res
 
+# Return a boolean result with probability of p to be True
+def sample_bernoulli(p):
+	return np.random.binomial(1, p, 1)[0] == 1
+
 if __name__ == "__main__":
 	dirs = sample_dirs(10000)
 	np.save("./dirs.npy", dirs)
