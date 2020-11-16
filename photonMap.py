@@ -10,10 +10,11 @@ from time import time
 
 # The class for one photon
 class Photon():
-    def __init__(self, photon_id):
+    def __init__(self, photon_id=None):
         self.id = photon_id  # photon id, starting from 0
         self.location = None  # photon location
         self.direction = None  # photon direction
+        self.depth = 0 # Set to n to represent it is the nth intersection
 
     def set_loc(self, x, y, z):
         self.location = np.array([x, y, z])
@@ -48,6 +49,8 @@ class PhotonMap():
 
         # KDTree to store photon locations
         self.kdtree = None
+
+        self.depth = 0 # max photon depth in the map
 
     # build the KDTree and balance it
     # call it after finishing all add_photon()

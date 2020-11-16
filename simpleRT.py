@@ -146,6 +146,5 @@ class SimpleRTRenderEngine(bpy.types.RenderEngine):
         # tell Blender all pixels have been set and are final
         self.end_result(result)
 
-
 if __name__ == "__main__":
     pass
