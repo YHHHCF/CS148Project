@@ -50,11 +50,13 @@ def trace_photons(depth):
         else:
             pass
 
+        light_dir = np.array(0, 0, 1) # Use any direction (TODO)
+
         for i in range(int(light.data.energy * emission_intensity)):
             # Create a photon (original) from the emission pattern
             photon = Photon()
             photon.set_loc(light.location[0], light.location[1], light.location[2])
-            direction = sample_dirs(1)
+            direction = sample_dirs(1, light_dir, 0.5)
             photon.set_dir(direction[0][0], direction[0][1], direction[0][2])
 
             # Trace the photon recursively
