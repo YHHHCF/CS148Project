@@ -14,14 +14,7 @@ def sample_dirs(n, norm, ratio):
 	res = np.zeros((n, 3))
 
 	# compute 2 orthogonal directions (x, y) to norm
-	x_axis = np.array([1, 0, 0])
-	if np.abs(np.dot(x_axis, norm)) > 0.9:
-		x_axis = np.array([0, 1, 0])
-
-	x_axis -= np.dot(x_axis, norm) * norm
-	x_axis = normalize(x_axis)
-
-	y_axis = np.cross(x_axis, norm)
+	x_axis, y_axis = build_coordinate(norm)
 
 	for i in range(n):
 		# theta is altitute cos(theta): [-1, 1]
@@ -31,17 +24,28 @@ def sample_dirs(n, norm, ratio):
 		# phi is longitute [0, 2*pi]
 		phi = 2 * np.pi * np.random.rand()
 
-		# res[i][0] = sin_theta * np.cos(phi) * x_axis
-		# res[i][1] = sin_theta * np.sin(phi) * y_axis
-		# res[i][2] = cos_theta * norm
-		res[i] = sin_theta * np.cos(phi) * x_axis + sin_theta * np.sin(phi) * y_axis + cos_theta * norm
+		# Compute the sampled direction based on x, y and z (norm) axis
+		res[i] = sin_theta * np.cos(phi) * x_axis + \
+		sin_theta * np.sin(phi) * y_axis + cos_theta * norm
 
 	return res
 
-# Sample on a 2D circle area
-# 
-def sample_2d_circle(n):
-	pass
+# Sample on a 2D disk area defined by norm and radius
+# return the n sample positions
+def sample_disk_loc(n, norm, radius):
+	res = np.zeros((n, 3))
+
+	# compute 2 orthogonal directions (x, y) to norm
+	x_axis, y_axis = build_coordinate(norm)
+
+	for i in range(n):
+		r = np.sqrt(np.random.rand()) * radius
+		theta = 2 * np.pi * np.random.rand()
+		res[i] = r * np.cos(theta) * x_axis + \
+		 r * np.sin(theta) * y_axis
+
+	return res
+
 
 # Return a boolean result with probability of p to be True
 def sample_bernoulli(p):
@@ -51,9 +55,30 @@ def sample_bernoulli(p):
 def normalize(arr):
 	return arr / np.linalg.norm(arr)
 
-if __name__ == "__main__":
-	norm = np.array([0, 0, 1])
-	dirs = sample_dirs(10000, norm, 0.8)
-	np.save("./dirs.npy", dirs)
+# Compute 2 normalized orthogonal axis given one direction
+def build_coordinate(norm):
+	# Choose a good x direction
+	x_axis = np.array([1., 0., 0.])
+	if np.abs(np.dot(x_axis, norm)) > 0.9:
+		x_axis = np.array([0., 1., 0.])
 
-	visualize("./dirs.npy")
+	x_axis -= np.dot(x_axis, norm) * norm
+	x_axis = normalize(x_axis)
+
+	# Compute y direction from cross product
+	y_axis = np.cross(x_axis, norm)
+
+	return x_axis, y_axis
+
+
+if __name__ == "__main__":
+	norm = np.array([1., 2., 3.])
+	norm = normalize(norm)
+
+	sphere_dirs = sample_dirs(10000, norm, 0.2)
+	np.save("./sphere_dirs.npy", sphere_dirs)
+	visualize("./sphere_dirs.npy")
+
+	disk_locs = sample_disk_loc(10000, norm, 1)
+	np.save("./disk_locs.npy", disk_locs)
+	visualize("./disk_locs.npy")

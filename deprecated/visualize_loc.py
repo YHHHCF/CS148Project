@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # Show all the photons' locations in the npy file
 # Plot in matplotlib, used for debug
 def visualize(path):
-    locations = np.load(path)
+    locations = np.load(path, allow_pickle=True)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
