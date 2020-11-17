@@ -32,7 +32,7 @@ def print_scene():
 # Given the scene and max photon depth (#hitting)
 # Return the photon map
 def trace_photons(depth):
-    emission_intensity = 100  # To be tuned
+    emission_intensity = 1000  # To be tuned
 
     print("Start Building Photon Map!")
     scene = bpy.context.scene
@@ -44,19 +44,30 @@ def trace_photons(depth):
 
     # Determine #photons for each light source
     for light in lights:
-        # Determine emission pattern from light property (TODO)
+        # Determine emission pattern from light property
         if light.data.type == "AREA":
-            pass
+            is_area_light = True
+            ratio = 0.5
         else:
-            pass
+            ratio = 1.0 # Can use ratio < 0.5 for spotlights
+            is_area_light = False
 
-        light_dir = np.array(0, 0, 1) # Use any direction (TODO)
+        light_dir = np.array([0, 0, -1]) # Use any direction (TODO)
 
         for i in range(int(light.data.energy * emission_intensity)):
             # Create a photon (original) from the emission pattern
             photon = Photon()
-            photon.set_loc(light.location[0], light.location[1], light.location[2])
-            direction = sample_dirs(1, light_dir, 0.5)
+
+            light_loc = np.array(light.location)
+
+            # Sample the photon location if it is area light
+            if is_area_light:
+                radius = light.data.size / 2
+                light_loc += sample_disk_loc(1, light_dir, radius)[0]
+            photon.set_loc(light_loc[0], light_loc[1], light_loc[2])
+
+
+            direction = sample_dirs(1, light_dir, ratio)
             photon.set_dir(direction[0][0], direction[0][1], direction[0][2])
 
             # Trace the photon recursively
