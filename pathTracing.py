@@ -100,17 +100,45 @@ def trace_photon(scene, depth, photon, photon_map):
     photon_copy.id = photon_map.get_id()
     photon_map.add_photon(photon_copy)
 
-    # Get intersection material information (TODO: base the reflection direction on material)
-    mat = hit_obj.simpleRT_material
-    reflectivity = mat.mirror_reflectivity # range [0, 1]
-
-    # Determint whether the photon will be bounced or absorbed
-    if not sample_bernoulli(reflectivity):
+    # Determint whether the photon will be absorbed
+    k_a = 0.1  # rate of abosorbtion, hard coded
+    if sample_bernoulli(k_a):
         return  # absorbed
 
-    # Update photon direction (TODO: implement BRDF table, now simply use reflection)
-    photon_dir = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm
-    photon.direction = np.array(photon_dir)
+    # Get intersection material information (TODO: base the reflection direction on material)
+    mat = hit_obj.simpleRT_material
+
+    # Update hit_norm and ray_inside_object
+    ray_inside_object = False
+    if hit_norm.dot(photon_dir) > 0:
+        hit_norm = -hit_norm
+        ray_inside_object = True
+    
+    # Determine k_r, rate of reflection, range [0, 1]
+    if mat.use_fresnel:
+        # calculate k_r using schlick’s approximation
+        R_0 = ((1 - mat.ior) / (1 + mat.ior)) ** 2
+        k_r = R_0 + (1 - R_0) * (1 + hit_norm.dot(photon_dir)) ** 5
+    else:
+        k_r = mat.mirror_reflectivity
+
+    # Update photon direction (TODO: implement BRDF table, now simply use reflection and transmission)
+    if sample_bernoulli(k_r):
+        # reflection
+        photon_dir = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm
+        photon.direction = np.array(photon_dir)
+    else:
+        # transmission
+        n1_by_n2 = 1 / mat.ior
+
+        if ray_inside_object:
+            n1_by_n2 = mat.ior
+
+        D_dot_N = photon_dir.dot(hit_norm)
+        inside_root = 1 - (n1_by_n2 ** 2) * (1 - D_dot_N ** 2)
+        if inside_root > 0:
+            photon_dir = photon_dir * n1_by_n2 - hit_norm * (n1_by_n2 * D_dot_N + inside_root ** 0.5)
+            photon.direction = np.array(photon_dir)
 
     # Call recursively if this photon has not reached depth limit
     if (photon.depth < depth):
