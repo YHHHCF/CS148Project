@@ -32,7 +32,7 @@ def print_scene():
 # Given the scene and max photon depth (#hitting)
 # Return the photon map
 def trace_photons(depth):
-    emission_intensity = 1000  # To be tuned
+    emission_intensity = 100  # To be tuned
 
     print("Start Building Photon Map!")
     scene = bpy.context.scene
@@ -49,7 +49,7 @@ def trace_photons(depth):
             is_area_light = True
             ratio = 0.5
         else:
-            ratio = 1.0 # Can use ratio < 0.5 for spotlights
+            ratio = 1.0  # Can use ratio < 0.5 for spotlights
             is_area_light = False
 
         light_dir = np.array([0, 0, -1]) # Use any direction (TODO)
@@ -110,6 +110,7 @@ def trace_photon(scene, depth, photon, photon_map):
 
     # Update photon direction (TODO: implement BRDF table, now simply use reflection)
     photon_dir = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm
+    photon.direction = np.array(photon_dir)
 
     # Call recursively if this photon has not reached depth limit
     if (photon.depth < depth):

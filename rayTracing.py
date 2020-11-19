@@ -58,7 +58,7 @@ def RT_trace_ray(scene, ray_orig, ray_dir, lights, depth=0):
     color : Vector, float array of 3 items
         Color of the pixel
     """
-    
+
     eps = 0.0003
 
     # cast a ray into the scene using Blender's built-in function
