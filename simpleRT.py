@@ -63,7 +63,7 @@ def RT_render_scene(scene, width, height, depth, num_sample, buf):
             
             for n in range(num_sample):
                 # calculate the ray direction
-                ray_dir = Vector((screen_x + corput_x[n], screen_y + corput_y[n], - focal_length))
+                ray_dir = Vector((screen_x + corput_x[n], screen_y + corput_y[n], -focal_length))
                 ray_dir.rotate(cam_orientation)
                 ray_dir = ray_dir.normalized()
                 

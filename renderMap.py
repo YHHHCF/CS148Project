@@ -6,22 +6,76 @@ import photonMap
 importlib.reload(photonMap)
 from photonMap import *
 
+import rayTracing
+importlib.reload(rayTracing)
+from rayTracing import *
+
 from skimage import io
+import numpy as np
 
 # Render a single channel photon map to an image
 def render_map(map_path, img_path):
     scene = bpy.context.scene
+    scale = scene.render.resolution_percentage / 100.0
     objs = scene.objects
+
     photon_map = PhotonMap(map_path)
+    photon_map.build_tree()
     radius = 0.1 # TODO: tune the retrieval radius
 
-    # Cast rays from camera
+    # Compute camera parameters
+    height = int(scene.render.resolution_x * scale)
+    width = int(scene.render.resolution_y * scale)
 
+    buf = np.zeros((height, width, 3))
+
+    cam_location = scene.camera.location
+    cam_orientation = scene.camera.rotation_euler
+
+    focal_length = scene.camera.data.lens / scene.camera.data.sensor_width
+    aspect_ratio = height / width
+
+    # iterate through all the pixels, cast a ray for each pixel
+    for y in range(height):
+        # get screen space coordinate for y
+        screen_y = ((y - (height / 2)) / height) * aspect_ratio
+        for x in range(width):
+            # get screen space coordinate for x
+            screen_x = (x - (width / 2)) / width
+
+            # calculate the ray direction
+            ray_dir = Vector((screen_x, screen_y, -focal_length))
+            ray_dir.rotate(cam_orientation)
+            ray_dir = ray_dir.normalized()
+
+            # trace global illumination corresponding to that pixel
+            # need to flip y, since screen origin starts from left bottom
+            # while image origin starts from left top
+            buf[height - 1 - y, x] = trace_diffuse(scene, cam_location, ray_dir, photon_map, radius)
+
+    io.imsave(img_path, buf)
+
+
+def trace_diffuse(scene, cam_location, ray_dir, photon_map, radius):
+    eps = 0.0003
+
+    # Get hit location
+    has_hit, hit_loc, hit_norm, _, hit_obj, _ = ray_cast(scene, cam_location, ray_dir)
+
+    color = np.zeros(3)
+
+    if not has_hit:
+        return color
 
     # Retrieve the nearby photons
-
+    photon_ids = photon_map.find_photons_r(hit_loc, radius)
+    
+    for photon_id in photon_ids:
+        color += 0.1
 
     # Compute the illumination from the photons
+
+    return color
 
 
 # Combine the intensity of a list of images (M, N, 3) by averaging them
