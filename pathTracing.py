@@ -32,7 +32,7 @@ def print_scene():
 # Given the scene and max photon depth (#hitting)
 # Return the photon map
 def trace_photons(depth):
-    emission_intensity = 1000  # To be tuned
+    emission_intensity = 100  # To be tuned
 
     print("Start Building Photon Map!")
     scene = bpy.context.scene

@@ -63,7 +63,7 @@ def RT_render_scene(scene, width, height, depth, num_sample, buf):
             
             for n in range(num_sample):
                 # calculate the ray direction
-                ray_dir = Vector((screen_x + corput_x[n], screen_y + corput_y[n], -focal_length))
+                ray_dir = Vector((screen_x + corput_x[n], screen_y + corput_y[n], - focal_length))
                 ray_dir.rotate(cam_orientation)
                 ray_dir = ray_dir.normalized()
                 
@@ -116,14 +116,14 @@ class SimpleRTRenderEngine(bpy.types.RenderEngine):
         else:
             self.render_scene(scene)
 
-        #============== for project debug
-        dir_path = "./profile"
-        profile(map_size=1e5, num_query=10, query_radius=0.2, dir_path=dir_path)
+        # #============== for project debug
+        # dir_path = "./profile"
+        # profile(map_size=1e5, num_query=10, query_radius=0.2, dir_path=dir_path)
 
-        from os.path import join
-        map_path = join(dir_path, "map.pkl")
-        test_load_map(map_path)
-        #============== for project debug
+        # from os.path import join
+        # map_path = join(dir_path, "map.pkl")
+        # test_load_map(map_path)
+        # #============== for project debug
 
     def render_scene(self, scene):
         # create a buffer to store the calculated intensities
