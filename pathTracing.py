@@ -2,6 +2,7 @@
 import bpy
 
 import importlib
+
 import photonMap
 importlib.reload(photonMap)
 from photonMap import *
@@ -125,7 +126,7 @@ def trace_photon(scene, depth, photon, photon_map):
     # Update photon direction (TODO: implement BRDF table, now simply use reflection and transmission)
     if sample_bernoulli(k_r):
         # reflection
-        photon_dir = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm
+        photon_dir = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm # add offset here
         photon.direction = np.array(photon_dir)
     else:
         # transmission
