@@ -31,7 +31,7 @@ def print_scene():
 
 # Given the scene and max photon depth (#hitting)
 # Return the photon map
-def trace_photons(depth):
+def trace_photons(depth, channel):
     emission_intensity = 100  # To be tuned
 
     print("Start Building Photon Map!")
@@ -71,7 +71,7 @@ def trace_photons(depth):
             photon.set_dir(direction[0][0], direction[0][1], direction[0][2])
 
             # Trace the photon recursively
-            trace_photon(scene, depth, photon, photon_map)
+            trace_photon(scene, depth, channel, photon, photon_map)
             
     print("Finished Building Photon Map!")
     return photon_map
@@ -79,7 +79,7 @@ def trace_photons(depth):
 
 # Trace one photon recursively
 # Add a copy of it to photon map each time it reflects
-def trace_photon(scene, depth, photon, photon_map):
+def trace_photon(scene, depth, channel, photon, photon_map):
     # Get photon location and direction
     photon_loc = Vector(photon.location)
     photon_dir = Vector(photon.direction)
@@ -123,7 +123,7 @@ def trace_photon(scene, depth, photon, photon_map):
         D_diffuse = sample_dirs(1, photon_dir, 0.5)[0]  # Hemisphere sampling
         photon_diffuse.direction = np.array(D_diffuse)  # Create a copy for diffusion
         trace_photon(scene, depth, photon_diffuse, photon_map)
-    
+
     # Determine k_r, rate of reflection, range [0, 1]
     if mat.use_fresnel:
         # calculate k_r using schlick’s approximation

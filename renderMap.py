@@ -14,6 +14,10 @@ from skimage import io
 from skimage.filters import gaussian
 import numpy as np
 
+import sample
+importlib.reload(sample)
+from sample import *
+
 # Render a single channel photon map to an image
 def render_map(map_path, img_path):
     scene = bpy.context.scene
@@ -38,6 +42,7 @@ def render_map(map_path, img_path):
 
     # iterate through all the pixels, cast a ray for each pixel
     for y in range(height):
+        print(f'Render progress: {(y + 1): d} /{height: d}')
         # get screen space coordinate for y
         screen_y = ((y - (height / 2)) / height) * aspect_ratio
         for x in range(width):
@@ -78,8 +83,20 @@ def trace_diffuse(scene, cam_location, ray_dir, photon_map, radius):
     # Compute the illumination from the photons
     for photon_id in photon_ids:
         p = photon_map.map[photon_id]
-        color += np.abs(np.dot(hit_norm, p.direction))
-    print(color)
+
+        # Only consider the photon if can be seen from camera
+        photon_camera_dir = normalize(p.location - cam_location)
+        has_hit_shadow, hit_loc_shadow, _, _, _, _ = \
+            ray_cast(scene, cam_location, photon_camera_dir)
+        if not has_hit_shadow:
+            can_see_photon = True
+        else:
+            dis_photon = np.dot(p.location - cam_location, p.location - cam_location)
+            dis_shadow_hit = np.dot(hit_loc_shadow - cam_location, hit_loc_shadow - cam_location)
+            can_see_photon = dis_photon <= dis_shadow_hit + eps
+
+        if can_see_photon:
+            color += np.abs(np.dot(hit_norm, p.direction))
     return color
 
 

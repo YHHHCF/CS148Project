@@ -86,7 +86,7 @@ class PhotonMap():
         ids = []
         for result in results:
             ids.append(result[1])
-        print("Query results size: ", len(ids))
+        # print("Query results size: ", len(ids))
         return ids
 
     # find all photons within a radius of a given location
@@ -97,7 +97,7 @@ class PhotonMap():
         ids = []
         for result in results:
             ids.append(result[1])
-        print("Query results size: ", len(ids))
+        # print("Query results size: ", len(ids))
         return ids
 
     # save self.map to a file
