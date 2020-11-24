@@ -11,6 +11,7 @@ importlib.reload(rayTracing)
 from rayTracing import *
 
 from skimage import io
+from skimage.filters import gaussian
 import numpy as np
 
 # Render a single channel photon map to an image
@@ -21,7 +22,7 @@ def render_map(map_path, img_path):
 
     photon_map = PhotonMap(map_path)
     photon_map.build_tree()
-    radius = 0.1 # TODO: tune the retrieval radius
+    radius = 0.3 # TODO: tune the retrieval radius
 
     # Compute camera parameters
     height = int(scene.render.resolution_x * scale)
@@ -53,6 +54,9 @@ def render_map(map_path, img_path):
             # while image origin starts from left top
             buf[height - 1 - y, x] = trace_diffuse(scene, cam_location, ray_dir, photon_map, radius)
 
+    buf = gaussian(buf, sigma=1, multichannel=True)  # smooth the photon rendering
+    buf = buf / np.max(buf)
+
     io.imsave(img_path, buf)
 
 
@@ -68,13 +72,14 @@ def trace_diffuse(scene, cam_location, ray_dir, photon_map, radius):
         return color
 
     # Retrieve the nearby photons
+    hit_loc = np.array(hit_loc)
     photon_ids = photon_map.find_photons_r(hit_loc, radius)
     
-    for photon_id in photon_ids:
-        color += 0.1
-
     # Compute the illumination from the photons
-
+    for photon_id in photon_ids:
+        p = photon_map.map[photon_id]
+        color += np.abs(np.dot(hit_norm, p.direction))
+    print(color)
     return color
 
 
@@ -87,11 +92,11 @@ def combine_image(paths, export_path, decay_ratio):
     exp_r = decay_ratio
 
     for path in paths[1:]:
-        img += (io.imread(path).astype(np.float32) / 255) * exp_r
+        img[:,:,:3] += (io.imread(path).astype(np.float32) / 255) * exp_r
         sum_coefficient += exp_r
         exp_r *= decay_ratio
 
-    img /= sum_coefficient
+    img[:,:,:3] /= sum_coefficient
     img = (img * 255).astype(np.uint8)
 
     io.imsave(export_path, img)

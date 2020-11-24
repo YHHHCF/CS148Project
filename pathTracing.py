@@ -101,11 +101,12 @@ def trace_photon(scene, depth, photon, photon_map):
     photon_map.add_photon(photon_copy)
 
     # Determint whether the photon will be absorbed
+    # Or already diffused/reflected/transmissed enough of times
     k_a = 0.1  # rate of abosorbtion, hard coded
-    if sample_bernoulli(k_a):
+    if photon.depth >= depth or sample_bernoulli(k_a):
         return  # absorbed
 
-    # Get intersection material information (TODO: base the reflection direction on material)
+    # Get intersection material information
     mat = hit_obj.simpleRT_material
 
     # Update hit_norm and ray_inside_object
@@ -113,6 +114,15 @@ def trace_photon(scene, depth, photon, photon_map):
     if hit_norm.dot(photon_dir) > 0:
         hit_norm = -hit_norm
         ray_inside_object = True
+
+    # Create a diffuse photon if the material is diffusive
+    diffuse_color = Vector(mat.diffuse_color).xyz
+    k_d = max(diffuse_color)  # TODO: add 3 channels
+    if sample_bernoulli(k_d):
+        photon_diffuse = photon.copy()
+        D_diffuse = sample_dirs(1, photon_dir, 0.5)[0]  # Hemisphere sampling
+        photon_diffuse.direction = np.array(D_diffuse)  # Create a copy for diffusion
+        trace_photon(scene, depth, photon_diffuse, photon_map)
     
     # Determine k_r, rate of reflection, range [0, 1]
     if mat.use_fresnel:
@@ -122,11 +132,11 @@ def trace_photon(scene, depth, photon, photon_map):
     else:
         k_r = mat.mirror_reflectivity
 
-    # Update photon direction (TODO: implement BRDF table, now simply use reflection and transmission)
+    # Update photon direction
     if sample_bernoulli(k_r):
         # reflection
-        photon_dir = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm
-        photon.direction = np.array(photon_dir)
+        D_reflect = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm
+        photon.direction = np.array(D_reflect)
     else:
         # transmission
         n1_by_n2 = 1 / mat.ior
@@ -137,12 +147,13 @@ def trace_photon(scene, depth, photon, photon_map):
         D_dot_N = photon_dir.dot(hit_norm)
         inside_root = 1 - (n1_by_n2 ** 2) * (1 - D_dot_N ** 2)
         if inside_root > 0:
-            photon_dir = photon_dir * n1_by_n2 - hit_norm * (n1_by_n2 * D_dot_N + inside_root ** 0.5)
-            photon.direction = np.array(photon_dir)
+            D_transmiss = photon_dir * n1_by_n2 - hit_norm * (n1_by_n2 * D_dot_N + inside_root ** 0.5)
+            photon.direction = np.array(D_transmiss)
 
-    # Call recursively if this photon has not reached depth limit
-    if (photon.depth < depth):
-        trace_photon(scene, depth, photon, photon_map)
+    # Call recursively for reflection or transmission
+    trace_photon(scene, depth, photon, photon_map)
+
+    
 
 
 if __name__ == "__main__":
