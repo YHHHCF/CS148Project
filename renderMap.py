@@ -19,7 +19,7 @@ importlib.reload(sample)
 from sample import *
 
 # Render a single channel photon map to an image
-def render_map(map_path, img_path):
+def render_map(map_path, img_path, channel):
     scene = bpy.context.scene
     scale = scene.render.resolution_percentage / 100.0
     objs = scene.objects
@@ -57,7 +57,8 @@ def render_map(map_path, img_path):
             # trace global illumination corresponding to that pixel
             # need to flip y, since screen origin starts from left bottom
             # while image origin starts from left top
-            buf[height - 1 - y, x] = trace_diffuse(scene, cam_location, ray_dir, photon_map, radius)
+            buf[height - 1 - y, x, channel] = \
+                trace_diffuse(scene, channel, cam_location, ray_dir, photon_map, radius)
 
     buf = gaussian(buf, sigma=1, multichannel=True)  # smooth the photon rendering
     buf = buf / np.max(buf)
@@ -65,13 +66,13 @@ def render_map(map_path, img_path):
     io.imsave(img_path, buf)
 
 
-def trace_diffuse(scene, cam_location, ray_dir, photon_map, radius):
+def trace_diffuse(scene, channel, cam_location, ray_dir, photon_map, radius):
     eps = 0.0003
 
     # Get hit location
     has_hit, hit_loc, hit_norm, _, hit_obj, _ = ray_cast(scene, cam_location, ray_dir)
 
-    color = np.zeros(3)
+    color = 0
 
     if not has_hit:
         return color
@@ -92,11 +93,13 @@ def trace_diffuse(scene, cam_location, ray_dir, photon_map, radius):
             can_see_photon = True
         else:
             dis_photon = np.dot(p.location - cam_location, p.location - cam_location)
-            dis_shadow_hit = np.dot(hit_loc_shadow - cam_location, hit_loc_shadow - cam_location)
+            dis_shadow_hit = np.dot(hit_loc_shadow - cam_location, \
+                                hit_loc_shadow - cam_location)
             can_see_photon = dis_photon <= dis_shadow_hit + eps
 
         if can_see_photon:
-            color += np.abs(np.dot(hit_norm, p.direction))
+            color += np.abs(np.dot(hit_norm, p.direction)) * \
+                        hit_obj.simpleRT_material.diffuse_color[channel]
     return color
 
 

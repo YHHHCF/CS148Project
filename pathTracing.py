@@ -116,8 +116,7 @@ def trace_photon(scene, depth, channel, photon, photon_map):
         ray_inside_object = True
 
     # Create a diffuse photon if the material is diffusive
-    diffuse_color = Vector(mat.diffuse_color).xyz
-    k_d = max(diffuse_color)  # TODO: add 3 channels
+    k_d = mat.diffuse_color[channel]  # The diffusion of a channel
     if sample_bernoulli(k_d):
         photon_diffuse = photon.copy()
         D_diffuse = sample_dirs(1, photon_dir, 0.5)[0]  # Hemisphere sampling
