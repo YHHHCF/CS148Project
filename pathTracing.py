@@ -116,12 +116,13 @@ def trace_photon(scene, depth, channel, photon, photon_map):
         ray_inside_object = True
 
     # Create a diffuse photon if the material is diffusive
-    k_d = mat.diffuse_color[channel]  # The diffusion of a channel
+    # The diffusion of a channel, want less diffuse photons so /2
+    k_d = mat.diffuse_color[channel] / 2
     if sample_bernoulli(k_d):
         photon_diffuse = photon.copy()
         D_diffuse = sample_dirs(1, photon_dir, 0.5)[0]  # Hemisphere sampling
         photon_diffuse.direction = np.array(D_diffuse)  # Create a copy for diffusion
-        trace_photon(scene, depth, photon_diffuse, photon_map)
+        trace_photon(scene, depth, channel, photon_diffuse, photon_map)
 
     # Determine k_r, rate of reflection, range [0, 1]
     if mat.use_fresnel:
@@ -150,7 +151,7 @@ def trace_photon(scene, depth, channel, photon, photon_map):
             photon.direction = np.array(D_transmiss)
 
     # Call recursively for reflection or transmission
-    trace_photon(scene, depth, photon, photon_map)
+    trace_photon(scene, depth, channel, photon, photon_map)
 
     
 
