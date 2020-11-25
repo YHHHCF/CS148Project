@@ -85,7 +85,7 @@ class PhotonMap():
         results = self.kdtree.find_n(loc, n)
         ids = []
         for result in results:
-            ids.append(result[1])
+            ids.append((result[1], result[2]))  # id, distance
         # print("Query results size: ", len(ids))
         return ids
 
@@ -96,7 +96,7 @@ class PhotonMap():
         results = self.kdtree.find_range(loc, r)
         ids = []
         for result in results:
-            ids.append(result[1])
+            ids.append((result[1], result[2]))
         # print("Query results size: ", len(ids))
         return ids
 

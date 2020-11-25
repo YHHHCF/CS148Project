@@ -19,14 +19,14 @@ importlib.reload(sample)
 from sample import *
 
 # Render a single channel photon map to an image
-def render_map(map_path, img_path, channel):
+def render_map(map_path, npy_path, channel):
     scene = bpy.context.scene
     scale = scene.render.resolution_percentage / 100.0
     objs = scene.objects
 
     photon_map = PhotonMap(map_path)
     photon_map.build_tree()
-    radius = 0.3 # TODO: tune the retrieval radius
+    radius = 0.25 # TODO: tune the retrieval radius
 
     # Compute camera parameters
     height = int(scene.render.resolution_x * scale)
@@ -60,10 +60,9 @@ def render_map(map_path, img_path, channel):
             buf[height - 1 - y, x, channel] = \
                 trace_diffuse(scene, channel, cam_location, ray_dir, photon_map, radius)
 
-    buf = gaussian(buf, sigma=1, multichannel=True)  # smooth the photon rendering
-    buf = buf / np.max(buf)
+    buf = gaussian(buf, sigma=0.5, multichannel=True)  # smooth the photon rendering
 
-    io.imsave(img_path, buf)
+    np.save(npy_path, buf)
 
 
 def trace_diffuse(scene, channel, cam_location, ray_dir, photon_map, radius):
@@ -82,30 +81,21 @@ def trace_diffuse(scene, channel, cam_location, ray_dir, photon_map, radius):
     photon_ids = photon_map.find_photons_r(hit_loc, radius)
     
     # Compute the illumination from the photons
-    for photon_id in photon_ids:
+    for photon_id, distance in photon_ids:
         p = photon_map.map[photon_id]
 
-        # Only consider the photon if can be seen from camera
-        photon_camera_dir = normalize(p.location - cam_location)
-        has_hit_shadow, hit_loc_shadow, _, _, _, _ = \
-            ray_cast(scene, cam_location, photon_camera_dir)
-        if not has_hit_shadow:
-            can_see_photon = True
-        else:
-            dis_photon = np.dot(p.location - cam_location, p.location - cam_location)
-            dis_shadow_hit = np.dot(hit_loc_shadow - cam_location, \
-                                hit_loc_shadow - cam_location)
-            can_see_photon = dis_photon <= dis_shadow_hit + eps
-
-        if can_see_photon:
-            color += np.abs(np.dot(hit_norm, p.direction)) * \
-                        hit_obj.simpleRT_material.diffuse_color[channel]
+        # Only consider the photon is above hit surface
+        hit_to_photon = p.location - hit_loc
+        if np.dot(hit_to_photon, hit_norm) >= 0:
+            dot = np.dot(hit_norm, p.direction)
+            if (dot < 0):
+                color += -dot * \
+                        hit_obj.simpleRT_material.diffuse_color[channel] / (0.25 + distance) ** 2
     return color
 
 
 # Combine the intensity of a list of images (M, N, 3) by averaging them
 # decay_ratio is used to decay the effect of larger index image if needed
-# decay_ratio should be one if we are combining RGB channels
 def combine_image(paths, export_path, decay_ratio):
     img = io.imread(paths[0]).astype(np.float32) / 255
     sum_coefficient = 1.0
@@ -121,6 +111,10 @@ def combine_image(paths, export_path, decay_ratio):
 
     io.imsave(export_path, img)
 
+# Combine 3 images of RGB channels
+def combine_channels(paths, export_path):
+    img = np.load(paths[0]) + np.load(paths[1]) + np.load(paths[2])
+    io.imsave(export_path, img)
 
 if __name__ == "__main__":
     pass

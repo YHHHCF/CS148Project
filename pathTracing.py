@@ -95,14 +95,15 @@ def trace_photon(scene, depth, channel, photon, photon_map):
     photon.set_loc(new_loc[0], new_loc[1], new_loc[2])
     photon.depth = photon.depth + 1
 
-    # Add a copy of original photon to photon map
-    photon_copy = photon.copy()
-    photon_copy.id = photon_map.get_id()
-    photon_map.add_photon(photon_copy)
+    # Add a copy of original photon to photon map if not direct illumination
+    if photon.depth > 1:
+        photon_copy = photon.copy()
+        photon_copy.id = photon_map.get_id()
+        photon_map.add_photon(photon_copy)
 
     # Determint whether the photon will be absorbed
     # Or already diffused/reflected/transmissed enough of times
-    k_a = 0.1  # rate of abosorbtion, hard coded
+    k_a = 0.5  # rate of abosorbtion, hard coded
     if photon.depth >= depth or sample_bernoulli(k_a):
         return  # absorbed
 
@@ -117,10 +118,10 @@ def trace_photon(scene, depth, channel, photon, photon_map):
 
     # Create a diffuse photon if the material is diffusive
     # The diffusion of a channel, want less diffuse photons so /2
-    k_d = mat.diffuse_color[channel] / 2
+    k_d = mat.diffuse_color[channel]
     if sample_bernoulli(k_d):
         photon_diffuse = photon.copy()
-        D_diffuse = sample_dirs(1, photon_dir, 0.5)[0]  # Hemisphere sampling
+        D_diffuse = sample_dirs(1, photon_dir, 0.5 * k_d)[0]  # Spotlight sampling
         photon_diffuse.direction = np.array(D_diffuse)  # Create a copy for diffusion
         trace_photon(scene, depth, channel, photon_diffuse, photon_map)
 
