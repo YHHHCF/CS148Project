@@ -21,5 +21,7 @@ How to use:
 8. Run combine_images to get the final image, and find the outcomes in ./results/export.png
 
 If you have any questions, please contact the authors:
+
 Zhejin Huang: zhejinh@stanford.edu
+
 Pramod Srinivasan: pramods@stanford.edu
