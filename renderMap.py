@@ -1,5 +1,7 @@
 # Render a photon map
 import bpy
+import sys
+sys.path.append("./tools")
 
 import importlib
 import photonMap
