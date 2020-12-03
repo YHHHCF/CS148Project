@@ -1,5 +1,5 @@
 # CS148Project
-https://user-images.githubusercontent.com/10063852/100977703-34f4f500-34f6-11eb-83b1-c98325ba342c.png
+![Alt text](photon_map.png?raw=true "Title")
 
 Project for Stanford CS148 2020 Fall
 
