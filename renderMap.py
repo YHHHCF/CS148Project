@@ -104,7 +104,8 @@ def combine_image(paths, export_path, decay_ratio):
     exp_r = decay_ratio
 
     for path in paths[1:]:
-        img[:,:,:3] += (io.imread(path).astype(np.float32) / 255) * exp_r
+        tmp = (io.imread(path).astype(np.float32) / 255)
+        img[:,:,:3] += tmp[:,:,:3] * exp_r
         # sum_coefficient += exp_r
         exp_r *= decay_ratio
 

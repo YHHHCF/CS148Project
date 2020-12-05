@@ -17,7 +17,7 @@ import rayTracing
 importlib.reload(rayTracing)
 from rayTracing import *
 
-eps = 0.0003
+eps = 0.003
 
 # Show the objects in the scene for debug
 def print_scene():
@@ -32,7 +32,7 @@ def print_scene():
 # Given the scene and max photon depth (#hitting)
 # Return the photon map
 def trace_photons(depth, channel):
-    emission_intensity = 1000  # To be tuned
+    emission_intensity = 100  # To be tuned
 
     print("Start Building Photon Map!")
     scene = bpy.context.scene
@@ -53,6 +53,7 @@ def trace_photons(depth, channel):
             is_area_light = False
 
         light_dir = np.array([0, 0, -1]) # Use any direction (TODO)
+        light_dir = normalize(light_dir)
 
         for i in range(int(light.data.energy * emission_intensity)):
             # Create a photon (original) from the emission pattern
@@ -64,10 +65,11 @@ def trace_photons(depth, channel):
             if is_area_light:
                 radius = light.data.size / 2
                 light_loc += sample_disk_loc(1, light_dir, radius)[0]
+                light_loc += eps * light_dir
             photon.set_loc(light_loc[0], light_loc[1], light_loc[2])
 
 
-            direction = sample_dirs(1, light_dir, ratio)
+            direction = sample_dirs(1, light_dir, 0.5)
             photon.set_dir(direction[0][0], direction[0][1], direction[0][2])
 
             # Trace the photon recursively
@@ -96,16 +98,16 @@ def trace_photon(scene, depth, channel, photon, photon_map):
     photon.depth = photon.depth + 1
 
     # Add a copy of original photon to photon map if not direct illumination
-    if photon.depth > 1:
+    if photon.depth > 0:
         photon_copy = photon.copy()
         photon_copy.id = photon_map.get_id()
         photon_map.add_photon(photon_copy)
 
     # Determint whether the photon will be absorbed
     # Or already diffused/reflected/transmissed enough of times
-    k_a = 0.5  # rate of abosorbtion, hard coded
-    if photon.depth >= depth or sample_bernoulli(k_a):
-        return  # absorbed
+    k_a = 0.1  # rate of abosorbtion, hard coded
+    if sample_bernoulli(k_a) or photon.depth >= depth:
+        return  # absorbed or max depth
 
     # Get intersection material information
     mat = hit_obj.simpleRT_material
@@ -117,14 +119,15 @@ def trace_photon(scene, depth, channel, photon, photon_map):
         ray_inside_object = True
 
     # Create a diffuse photon if the material is diffusive
-    # The diffusion of a channel, want less diffuse photons so /2
+    # The diffusion of a channel
     k_d = mat.diffuse_color[channel]
     if sample_bernoulli(k_d):
         photon_diffuse = photon.copy()
-        D_diffuse = sample_dirs(1, photon_dir, 0.5 * k_d)[0]  # Spotlight sampling
+        D_diffuse = sample_dirs(1, hit_norm, 0.5)[0]  # hemisphere sampling
         photon_diffuse.direction = np.array(D_diffuse)  # Create a copy for diffusion
         trace_photon(scene, depth, channel, photon_diffuse, photon_map)
 
+    # Reflection
     # Determine k_r, rate of reflection, range [0, 1]
     if mat.use_fresnel:
         # calculate k_r using schlick’s approximation
@@ -133,12 +136,16 @@ def trace_photon(scene, depth, channel, photon, photon_map):
     else:
         k_r = mat.mirror_reflectivity
 
-    # Update photon direction
     if sample_bernoulli(k_r):
         # reflection
         D_reflect = photon_dir - 2 * photon_dir.dot(hit_norm) * hit_norm
         photon.direction = np.array(D_reflect)
-    else:
+
+        # Call recursively for reflection or transmission
+        trace_photon(scene, depth, channel, photon, photon_map)
+
+    # Determine transmission
+    if sample_bernoulli(mat.transmission):
         # transmission
         n1_by_n2 = 1 / mat.ior
 
@@ -151,10 +158,8 @@ def trace_photon(scene, depth, channel, photon, photon_map):
             D_transmiss = photon_dir * n1_by_n2 - hit_norm * (n1_by_n2 * D_dot_N + inside_root ** 0.5)
             photon.direction = np.array(D_transmiss)
 
-    # Call recursively for reflection or transmission
-    trace_photon(scene, depth, channel, photon, photon_map)
-
-    
+        # Call recursively for reflection or transmission
+        trace_photon(scene, depth, channel, photon, photon_map)
 
 
 if __name__ == "__main__":
