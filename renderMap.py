@@ -92,7 +92,7 @@ def trace_diffuse(scene, channel, cam_location, ray_dir, photon_map, radius):
             dot = np.dot(hit_norm, p.direction)
             if (dot < 0):
                 color += -dot * \
-                        hit_obj.simpleRT_material.diffuse_color[channel] / (0.25 + distance) ** 2
+                        hit_obj.simpleRT_material.diffuse_color[channel] / (0.05 + distance) ** 2
     return color
 
 
